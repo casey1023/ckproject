@@ -1,3 +1,5 @@
+#https://www.learnpyqt.com/courses/custom-widgets/bitmap-graphics/
+
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
@@ -37,6 +39,8 @@ class Canvas(QtWidgets.QLabel):
     def mouseReleaseEvent(self, e):
         self.last_x = None
         self.last_y = None
+
+
 COLORS = [
 # 17 undertones https://lospec.com/palette-list/17undertones
 '#000000', '#141923', '#414168', '#3a7fa7', '#35e3e3', '#8fd970', '#5ebb49', 
@@ -52,6 +56,7 @@ class QPaletteButton(QtWidgets.QPushButton):
         self.setFixedSize(QtCore.QSize(24,24))
         self.color = color
         self.setStyleSheet("background-color: %s;" % color)
+
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
@@ -76,8 +81,21 @@ class MainWindow(QtWidgets.QMainWindow):
             b.pressed.connect(lambda c=c: self.canvas.set_pen_color(c))
             layout.addWidget(b)
 
+'''
+def shoot():
+    p = QPixmap.grabWindow(widget.winId())
+    p.save(filename, 'jpg')
+    label.setPixmap(p)        # just for fun :)
+    print("shot taken")
+'''
 
 app = QtWidgets.QApplication(sys.argv)
 window = MainWindow()
+
+#window.layout().addWidget(QPushButton('take screenshot', clicked=shoot))
+'''
+p = QtGui.QPixmap.grabWindow(widget.winId())
+print("shot taken")
+'''
 window.show()
 app.exec_()
