@@ -23,7 +23,7 @@ import torch
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from")
-parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
+parser.add_argument("--n_epochs", type=int, default=100, help="number of epochs of training")
 parser.add_argument("--dataset_name", type=str, default="monet2photo", help="name of the dataset")
 parser.add_argument("--batch_size", type=int, default=1, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
@@ -34,8 +34,8 @@ parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads 
 parser.add_argument("--img_height", type=int, default=256, help="size of image height")
 parser.add_argument("--img_width", type=int, default=256, help="size of image width")
 parser.add_argument("--channels", type=int, default=3, help="number of image channels")
-parser.add_argument("--sample_interval", type=int, default=100, help="interval between saving generator outputs")
-parser.add_argument("--checkpoint_interval", type=int, default=-1, help="interval between saving model checkpoints")
+parser.add_argument("--sample_interval", type=int, default=200, help="interval between saving generator outputs")
+parser.add_argument("--checkpoint_interval", type=int, default=10, help="interval between saving model checkpoints")
 parser.add_argument("--n_residual_blocks", type=int, default=9, help="number of residual blocks in generator")
 parser.add_argument("--lambda_cyc", type=float, default=10.0, help="cycle loss weight")
 parser.add_argument("--lambda_id", type=float, default=5.0, help="identity loss weight")
@@ -61,14 +61,22 @@ G_BA = GeneratorResNet(input_shape, opt.n_residual_blocks)
 D_A = Discriminator(input_shape)
 D_B = Discriminator(input_shape)
 
+default_device_gpu = 0
+lowest_gpu_usage = torch.cuda.memory_allocated(0) + torch.cuda.memory_cached(0)
+
+for i in range(torch.cuda.device_count()):
+    if (lowest_gpu_usage > torch.cuda.memory_allocated(i) + torch.cuda.memory_cached(i)):
+        lowest_gpu_usage = torch.cuda.memory_allocated(i) + torch.cuda.memory_cached(i)
+        default_device_gpu = i
+
 if cuda:
-    G_AB = G_AB.cuda()
-    G_BA = G_BA.cuda()
-    D_A = D_A.cuda()
-    D_B = D_B.cuda()
-    criterion_GAN.cuda()
-    criterion_cycle.cuda()
-    criterion_identity.cuda()
+    G_AB = G_AB.cuda(i)
+    G_BA = G_BA.cuda(i)
+    D_A = D_A.cuda(i)
+    D_B = D_B.cuda(i)
+    criterion_GAN.cuda(i)
+    criterion_cycle.cuda(i)
+    criterion_identity.cuda(i)
 
 if opt.epoch != 0:
     # Load pretrained models
