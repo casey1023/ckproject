@@ -7,6 +7,7 @@ import math
 import itertools
 import datetime
 import time
+import random
 
 import torchvision.transforms as transforms
 from torchvision.utils import save_image, make_grid
@@ -113,8 +114,8 @@ transforms_ = [
 
 #Load in data
 dataloader = DataLoader(
-    ImageDataset("../../data/test_image_data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True, mode="test"),
-    batch_size=5,
+    ImageDataset("../../data/test_image_data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True,mode="test"),
+    batch_size=1,
     shuffle=False,
     num_workers=1
 )
@@ -124,5 +125,52 @@ wordlist = []
 for (dirpath, dirnames, filenames) in os.walk("../../data/test_image_data/%s" % opt.dataset_name):
     wordlist.append(filenames)
 
-for i in len(wordlist):
+'''
+for i in range(len(wordlist)):
     print(wordlist[i])
+'''
+
+data_amount = len(wordlist[3])
+cmp_num = int(input("how many pic do you want to compare?"))
+q = ''
+selfpick = False
+num_list = []
+jumpout = False
+
+while not jumpout:
+    q = str(input("would you like to pick it yourself?"))
+    if q != 'y' and q != 'n':
+        continue
+    else:
+        jumpout = True
+        if q == 'y':
+            selfpick = True
+        else:
+            selfpick = False
+
+
+if selfpick == True:
+    print('number is between 0 ~ %s' % str(data_amount - 1))
+    while not jumpout:
+        #q = str(input("please pick 5 number(ex.2 10 6 3 56)"))
+        #temp = q.split("")
+        #jumpout = True
+        
+        if len(temp) != 5:
+            jumpout = False
+            continue
+
+        for i in range(5):
+            num_list.extend(int(temp[i])
+            #if (num_list[i] < 0) or (num_list[i] > (data_amount - 1)):
+            #    jumpout = False
+
+
+
+if selfpick == False:
+    for i in range(5):
+        num_list.append(random.randint(0, data_amount))
+
+
+
+#print(num_list)
