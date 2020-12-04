@@ -131,7 +131,7 @@ transforms_ = [
 
 # Training data loader
 dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True),
+    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True, mode="train"),
     batch_size=opt.batch_size,
     shuffle=True,
     num_workers=opt.n_cpu,
