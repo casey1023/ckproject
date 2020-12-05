@@ -122,7 +122,7 @@ transforms_ = [
 
 #Load in data
 dataloader = DataLoader(
-    ImageDataset("../../data/test_image_data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True, mode="train"),
+    ImageDataset("../../data/test_image_data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=False, mode="train"),
     batch_size=1,
     shuffle=False
 )
@@ -203,8 +203,6 @@ for k in range(cmp_num):
             numcnt += 1
             A = Variable(batch["A"].type(Tensor))
             B = Variable(batch["B"].type(Tensor))
-
-            plt.imshow(  A[0].permute(1, 2, 0)  )
             
             real_A.append(A[0])
             real_B.append(B[0])
@@ -218,8 +216,8 @@ for k in range(cmp_num):
             fake_A.append(f_A[0])
             fake_B.append(f_B[0])
 
-    real_A = make_grid(real_A, nrow=5, normalize=True)
-    real_B = make_grid(real_B, nrow=5, normalize=True)
+    real_A = make_grid(real_A, nrow=5, normalize=False)
+    real_B = make_grid(real_B, nrow=5, normalize=False)
     fake_A = make_grid(fake_A, nrow=5, normalize=True)
     fake_B = make_grid(fake_B, nrow=5, normalize=True)
 
