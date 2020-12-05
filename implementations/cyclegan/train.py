@@ -25,7 +25,7 @@ import torch.nn.functional as F
 import torch
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from")
+parser.add_argument("--epoch", type=int, default=-1, help="epoch to start training from")
 parser.add_argument("--n_epochs", type=int, default=100, help="number of epochs of training")
 parser.add_argument("--dataset_name", type=str, default="monet2photo", help="name of the dataset")
 parser.add_argument("--batch_size", type=int, default=1, help="size of the batches")
@@ -50,6 +50,15 @@ print(opt)
 os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
 os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
 
+if opt.epoch == -1:
+    print("Please input the epoch to load in models!")
+    exit()
+
+if opt.dataset_name == "monet2photo":
+    print("Please input the dataset you're gonna use!")
+    exit()
+
+
 # Losses
 criterion_GAN = torch.nn.MSELoss()
 criterion_cycle = torch.nn.L1Loss()
@@ -65,14 +74,16 @@ G_BA = GeneratorResNet(input_shape, opt.n_residual_blocks)
 D_A = Discriminator(input_shape)
 D_B = Discriminator(input_shape)
 
+torch.cuda.set_device(opt.gpu_device)
+
 if cuda:
-    G_AB = G_AB.cuda(opt.gpu_device)
-    G_BA = G_BA.cuda(opt.gpu_device)
-    D_A = D_A.cuda(opt.gpu_device)
-    D_B = D_B.cuda(opt.gpu_device)
-    criterion_GAN.cuda(opt.gpu_device)
-    criterion_cycle.cuda(opt.gpu_device)
-    criterion_identity.cuda(opt.gpu_device)
+    G_AB = G_AB.cuda()
+    G_BA = G_BA.cuda()
+    D_A = D_A.cuda()
+    D_B = D_B.cuda()
+    criterion_GAN.cuda()
+    criterion_cycle.cuda()
+    criterion_identity.cuda()
 
 if opt.epoch != 0:
     # Load pretrained models
@@ -80,13 +91,6 @@ if opt.epoch != 0:
     G_BA.load_state_dict(torch.load("saved_models/%s/G_BA_%d.pth" % (opt.dataset_name, opt.epoch)))
     D_A.load_state_dict(torch.load("saved_models/%s/D_A_%d.pth" % (opt.dataset_name, opt.epoch)))
     D_B.load_state_dict(torch.load("saved_models/%s/D_B_%d.pth" % (opt.dataset_name, opt.epoch)))
-elif opt.epoch == 0:
-    print("Please input the epoch to load in models!")
-    exit()
-
-if opt.dataset_name == "monet2photo":
-    print("Please input the dataset you're gonna use!")
-    exit()
 
 # Optimizers
 optimizer_G = torch.optim.Adam(
@@ -109,6 +113,7 @@ lr_scheduler_D_B = torch.optim.lr_scheduler.LambdaLR(
 Tensor = torch.cuda.FloatTensor if cuda else torch.Tensor
 
 transforms_ = [
+    transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ]
 
@@ -116,8 +121,7 @@ transforms_ = [
 dataloader = DataLoader(
     ImageDataset("../../data/test_image_data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True,mode="test"),
     batch_size=1,
-    shuffle=False,
-    num_workers=1
+    shuffle=False
 )
 
 wordlist = []
@@ -130,7 +134,7 @@ for i in range(len(wordlist)):
     print(wordlist[i])
 '''
 
-data_amount = len(wordlist[3])
+data_amount = len(wordlist[1])
 cmp_num = int(input("how many pic do you want to compare?"))
 q = ''
 selfpick = False
@@ -148,29 +152,40 @@ while not jumpout:
         else:
             selfpick = False
 
+jumpout = False
 
 if selfpick == True:
     print('number is between 0 ~ %s' % str(data_amount - 1))
     while not jumpout:
-        #q = str(input("please pick 5 number(ex.2 10 6 3 56)"))
-        #temp = q.split("")
-        #jumpout = True
+        q = str(input("please pick 5 number(ex.2 10 6 3 56)"))
+        temp = q.split(" ")
+        jumpout = True
         
         if len(temp) != 5:
             jumpout = False
             continue
-
+        
         for i in range(5):
-            num_list.extend(int(temp[i])
-            #if (num_list[i] < 0) or (num_list[i] > (data_amount - 1)):
-            #    jumpout = False
+            num_list.append(int(temp[i]))
+        
+        check = False
+        for i in range(5):
+            if (num_list[i] < 0) or (num_list[i] > (data_amount - 1)):
+                check = True
+        
+        if not(check):
+            jumpout = True
 
-
-
-if selfpick == False:
+elif selfpick == False:
     for i in range(5):
         num_list.append(random.randint(0, data_amount))
 
-
-
 #print(num_list)
+'''
+for (i, batch) in enumerate(dataloader):
+    print("qwer")
+    abd = batch["A"].type(Tensor)
+    print(abd.shape())
+'''
+print(len(dataloader))
+print("end")
