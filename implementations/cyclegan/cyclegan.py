@@ -161,7 +161,7 @@ def sample_images(batches_done):
     fake_B = make_grid(fake_B, nrow=5, normalize=True)
     # Arange images along y-axis
     image_grid = torch.cat((real_A, fake_B, real_B, fake_A), 1)
-    save_image(image_grid, "images/%s/%s.png" % (opt.dataset_name, batches_done), normalize=False)
+    save_image(image_grid, "images/%s/%s.jpg" % (opt.dataset_name, batches_done), normalize=False)
 
 
 # ----------

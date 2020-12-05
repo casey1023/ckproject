@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "/home/casey/anaconda3/envs/pytorch/bin/python",
-    "python.dataScience.jupyterServerURI": "local"
+    "python.pythonPath": "/home/extra/fkyw2020/anaconda3/bin/python",
+    "jupyter.jupyterServerType": "local"
 }

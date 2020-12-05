@@ -8,6 +8,7 @@ import itertools
 import datetime
 import time
 import random
+import matplotlib.pyplot as plt
 
 import torchvision.transforms as transforms
 from torchvision.utils import save_image, make_grid
@@ -64,7 +65,9 @@ criterion_GAN = torch.nn.MSELoss()
 criterion_cycle = torch.nn.L1Loss()
 criterion_identity = torch.nn.L1Loss()
 
-cuda = torch.cuda.is_available()
+#cuda = torch.cuda.is_available()
+cuda = False
+
 
 input_shape = (opt.channels, opt.img_height, opt.img_width)
 
@@ -119,7 +122,7 @@ transforms_ = [
 
 #Load in data
 dataloader = DataLoader(
-    ImageDataset("../../data/test_image_data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True,mode="test"),
+    ImageDataset("../../data/test_image_data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True, mode="train"),
     batch_size=1,
     shuffle=False
 )
@@ -134,58 +137,101 @@ for i in range(len(wordlist)):
     print(wordlist[i])
 '''
 
-data_amount = len(wordlist[1])
+data_amount = len(dataloader)
 cmp_num = int(input("how many pic do you want to compare?"))
-q = ''
-selfpick = False
-num_list = []
-jumpout = False
 
-while not jumpout:
-    q = str(input("would you like to pick it yourself?"))
-    if q != 'y' and q != 'n':
-        continue
-    else:
-        jumpout = True
-        if q == 'y':
-            selfpick = True
-        else:
-            selfpick = False
+for k in range(cmp_num):
+    q = ''
+    selfpick = False
+    num_list = []
+    jumpout = False
 
-jumpout = False
-
-if selfpick == True:
-    print('number is between 0 ~ %s' % str(data_amount - 1))
     while not jumpout:
-        q = str(input("please pick 5 number(ex.2 10 6 3 56)"))
-        temp = q.split(" ")
-        jumpout = True
-        
-        if len(temp) != 5:
-            jumpout = False
+        q = str(input("would you like to pick it yourself?"))
+        if q != 'y' and q != 'n':
             continue
-        
-        for i in range(5):
-            num_list.append(int(temp[i]))
-        
-        check = False
-        for i in range(5):
-            if (num_list[i] < 0) or (num_list[i] > (data_amount - 1)):
-                check = True
-        
-        if not(check):
+        else:
             jumpout = True
+            if q == 'y':
+                selfpick = True
+            else:
+                selfpick = False
 
-elif selfpick == False:
+    jumpout = False
+
+    if selfpick == True:
+        print('number is between 0 ~ %s' % str(data_amount - 1))
+        while not jumpout:
+            q = str(input("please pick 5 number(ex.2 10 6 3 56)"))
+            temp = q.split(" ")
+            jumpout = True
+            
+            if len(temp) != 5:
+                jumpout = False
+                continue
+            
+            for i in range(5):
+                num_list.append(int(temp[i]))
+            
+            check = False
+            for i in range(5):
+                if (num_list[i] < 0) or (num_list[i] > (data_amount - 1)):
+                    check = True
+            
+            if not(check):
+                jumpout = True
+
+    elif selfpick == False:
+        for i in range(5):
+            num_list.append(random.randint(0, data_amount))
+
+    #print(num_list)
+
+    num_list.sort()
+    real_A = []
+    real_B = []
+    fake_A = []
+    fake_B = []
+    numcnt = 0
+
+        
+
+    for (i, batch) in enumerate(dataloader):
+        if numcnt >= 5:
+            break
+        if i == num_list[numcnt]:
+            numcnt += 1
+            A = Variable(batch["A"].type(Tensor))
+            B = Variable(batch["B"].type(Tensor))
+
+            plt.imshow(  A[0].permute(1, 2, 0)  )
+            
+            real_A.append(A[0])
+            real_B.append(B[0])
+
+            G_AB.eval()
+            G_BA.eval()
+
+            f_A = G_BA(B)
+            f_B = G_AB(A)
+
+            fake_A.append(f_A[0])
+            fake_B.append(f_B[0])
+
+    real_A = make_grid(real_A, nrow=5, normalize=True)
+    real_B = make_grid(real_B, nrow=5, normalize=True)
+    fake_A = make_grid(fake_A, nrow=5, normalize=True)
+    fake_B = make_grid(fake_B, nrow=5, normalize=True)
+
+    name = ""
     for i in range(5):
-        num_list.append(random.randint(0, data_amount))
+        name += str(num_list[i]) + "_"
 
-#print(num_list)
-'''
-for (i, batch) in enumerate(dataloader):
-    print("qwer")
-    abd = batch["A"].type(Tensor)
-    print(abd.shape())
-'''
-print(len(dataloader))
+    image_grid = torch.cat((real_A, fake_B, real_B, fake_A), 1)
+
+    os.makedirs("images/test_image/%s" % opt.dataset_name, exist_ok=True)
+
+    save_image(image_grid, "images/test_image//%s/%s.jpg" % (opt.dataset_name, name), normalize=False)
+
+
 print("end")
