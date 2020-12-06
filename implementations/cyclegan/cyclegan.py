@@ -22,7 +22,7 @@ import torch.nn.functional as F
 import torch
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from")
+parser.add_argument("--epoch", type=int, default=1, help="epoch to start training from")
 parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
 parser.add_argument("--dataset_name", type=str, default="monet2photo", help="name of the dataset")
 parser.add_argument("--batch_size", type=int, default=1, help="size of the batches")
@@ -169,7 +169,7 @@ def sample_images(batches_done):
 # ----------
 
 prev_time = time.time()
-for epoch in range(opt.epoch, opt.n_epochs):
+for epoch in range(opt.epoch, opt.n_epochs + 1):
     for i, batch in enumerate(dataloader):
 
         # Set model input
