@@ -62,16 +62,6 @@ G_BA = GeneratorResNet(input_shape, opt.n_residual_blocks)
 D_A = Discriminator(input_shape)
 D_B = Discriminator(input_shape)
 
-'''
-default_device_gpu = 0
-lowest_gpu_usage = torch.cuda.memory_allocated(0) + torch.cuda.memory_cached(0)
-
-for i in range(torch.cuda.device_count()):
-    if (lowest_gpu_usage > torch.cuda.memory_allocated(i) + torch.cuda.memory_cached(i)):
-        lowest_gpu_usage = torch.cuda.memory_allocated(i) + torch.cuda.memory_cached(i)
-        default_device_gpu = i
-'''
-
 torch.cuda.set_device(opt.gpu_device)
 
 if cuda:
@@ -86,7 +76,7 @@ if cuda:
 
 print("hello")
 
-if opt.epoch != 0:
+if opt.epoch != 1:
     # Load pretrained models
     G_AB.load_state_dict(torch.load("saved_models/%s/G_AB_%d.pth" % (opt.dataset_name, opt.epoch)))
     G_BA.load_state_dict(torch.load("saved_models/%s/G_BA_%d.pth" % (opt.dataset_name, opt.epoch)))

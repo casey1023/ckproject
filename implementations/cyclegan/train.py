@@ -49,7 +49,7 @@ print(opt)
 
 # Create sample and checkpoint directories
 os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
-os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
+os.makedirs("saved_models/test_image/%s" % opt.dataset_name, exist_ok=True)
 
 if opt.epoch == -1:
     print("Please input the epoch to load in models!")
@@ -77,9 +77,8 @@ G_BA = GeneratorResNet(input_shape, opt.n_residual_blocks)
 D_A = Discriminator(input_shape)
 D_B = Discriminator(input_shape)
 
-torch.cuda.set_device(opt.gpu_device)
-
 if cuda:
+    torch.cuda.set_device(opt.gpu_device)
     G_AB = G_AB.cuda()
     G_BA = G_BA.cuda()
     D_A = D_A.cuda()
@@ -90,10 +89,14 @@ if cuda:
 
 if opt.epoch != 0:
     # Load pretrained models
-    G_AB.load_state_dict(torch.load("saved_models/%s/G_AB_%d.pth" % (opt.dataset_name, opt.epoch)))
-    G_BA.load_state_dict(torch.load("saved_models/%s/G_BA_%d.pth" % (opt.dataset_name, opt.epoch)))
-    D_A.load_state_dict(torch.load("saved_models/%s/D_A_%d.pth" % (opt.dataset_name, opt.epoch)))
-    D_B.load_state_dict(torch.load("saved_models/%s/D_B_%d.pth" % (opt.dataset_name, opt.epoch)))
+    if torch.cuda.is_available():
+        G_AB.load_state_dict(torch.load("saved_models/%s/G_AB_%d.pth" % (opt.dataset_name, opt.epoch)))
+        G_BA.load_state_dict(torch.load("saved_models/%s/G_BA_%d.pth" % (opt.dataset_name, opt.epoch)))
+        D_A.load_state_dict(torch.load("saved_models/%s/D_A_%d.pth" % (opt.dataset_name, opt.epoch)))
+        D_B.load_state_dict(torch.load("saved_models/%s/D_B_%d.pth" % (opt.dataset_name, opt.epoch)))
+    else:
+        print("no gpu")
+        exit()
 
 # Optimizers
 optimizer_G = torch.optim.Adam(
@@ -229,7 +232,7 @@ for k in range(cmp_num):
 
     os.makedirs("images/test_image/%s" % opt.dataset_name, exist_ok=True)
 
-    save_image(image_grid, "images/test_image//%s/%s.jpg" % (opt.dataset_name, name), normalize=False)
+    save_image(image_grid, "images/test_image/%s/%s.jpg" % (opt.dataset_name, name), normalize=False)
 
 
 print("end")
