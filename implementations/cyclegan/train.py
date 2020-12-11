@@ -72,8 +72,8 @@ cuda = False
 input_shape = (opt.channels, opt.img_height, opt.img_width)
 
 # Initialize generator and discriminator
-G_AB = GeneratorResNet(input_shape, opt.n_residual_blocks)
-G_BA = GeneratorResNet(input_shape, opt.n_residual_blocks)
+G_AB = Generator(input_shape)
+G_BA = Generator(input_shape)
 D_A = Discriminator(input_shape)
 D_B = Discriminator(input_shape)
 
