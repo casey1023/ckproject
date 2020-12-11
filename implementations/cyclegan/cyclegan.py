@@ -247,7 +247,7 @@ for epoch in range(opt.epoch, opt.n_epochs + 1):
         # --------------
 
         # Determine approximate time left
-        batches_done = epoch * len(dataloader) + i
+        batches_done = (epoch - 1) * len(dataloader) + i
         batches_left = opt.n_epochs * len(dataloader) - batches_done
         time_left = datetime.timedelta(seconds=batches_left * (time.time() - prev_time))
         prev_time = time.time()
