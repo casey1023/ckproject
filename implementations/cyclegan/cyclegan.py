@@ -37,6 +37,7 @@ parser.add_argument("--img_width", type=int, default=64, help="size of image wid
 parser.add_argument("--channels", type=int, default=3, help="number of image channels")
 parser.add_argument("--sample_interval", type=int, default=800, help="interval between saving generator outputs")
 parser.add_argument("--checkpoint_interval", type=int, default=10, help="interval between saving model checkpoints")
+parser.add_argument("--n_residual_blocks", type=int, default=9, help="number of residual blocks in generator")
 parser.add_argument("--lambda_cyc", type=float, default=10.0, help="cycle loss weight")
 parser.add_argument("--lambda_id", type=float, default=5.0, help="identity loss weight")
 parser.add_argument("--gpu_device", type=int, default=0, help="set up which gpu you gonna use")
@@ -63,8 +64,8 @@ cuda = torch.cuda.is_available()
 input_shape = (opt.channels, opt.img_height, opt.img_width)
 
 # Initialize generator and discriminator
-G_AB = Generator(input_shape)
-G_BA = Generator(input_shape)
+G_AB = Generator(input_shape, opt.num_residual_blocks)
+G_BA = Generator(input_shape, opt.num_residual_blocks)
 D_A = Discriminator(input_shape)
 D_B = Discriminator(input_shape)
 
