@@ -5,6 +5,7 @@ import math
 import itertools
 import datetime
 import time
+import random
 
 import torchvision.transforms as transforms
 from torchvision.utils import save_image, make_grid
@@ -39,12 +40,18 @@ parser.add_argument("--checkpoint_interval", type=int, default=10, help="interva
 parser.add_argument("--lambda_cyc", type=float, default=10.0, help="cycle loss weight")
 parser.add_argument("--lambda_id", type=float, default=5.0, help="identity loss weight")
 parser.add_argument("--gpu_device", type=int, default=0, help="set up which gpu you gonna use")
+parser.add_argument("--epoch_save", nargs="+", default=[], help="input the epochs to save those dict")
 opt = parser.parse_args()
 print(opt)
 
 # Create sample and checkpoint directories
 os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
 os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
+
+#epochstosave
+epochstosave = []
+for i in opt.epoch_save:
+    epochstosave.append(int(i))
 
 # Losses
 criterion_GAN = torch.nn.MSELoss()
@@ -61,9 +68,8 @@ G_BA = Generator(input_shape)
 D_A = Discriminator(input_shape)
 D_B = Discriminator(input_shape)
 
-torch.cuda.set_device(opt.gpu_device)
-
 if cuda:
+    torch.cuda.set_device(opt.gpu_device)
     G_AB = G_AB.cuda()
     G_BA = G_BA.cuda()
     D_A = D_A.cuda()
@@ -113,21 +119,39 @@ fake_A_buffer = ReplayBuffer()
 fake_B_buffer = ReplayBuffer()
 
 # Image transformations
-transforms_ = [
+transforms_train_ = [
+    transforms.Resize(int(opt.img_height * 1.1), Image.BICUBIC),
+    transforms.RandomCrop((opt.img_height, opt.img_width)),
+    transforms.Grayscale(3),
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ]
 
-# Training data loader
-dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True, mode="train"),
-    batch_size=opt.batch_size,
-    shuffle=True,
-    num_workers=opt.n_cpu,
-)
+transforms_test_ = [
+    transforms.Resize(int(opt.img_height * 1.1), Image.BICUBIC),
+    transforms.RandomCrop((opt.img_height, opt.img_width)),
+    transforms.Grayscale(3),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+]
+
+#list of dataloader
+dataloader = []
+
+for i in range(10):
+    # Training data loader
+    temp = DataLoader(
+        ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_train_, unaligned=True, mode="train"),
+        batch_size=opt.batch_size,
+        shuffle=True,
+        num_workers=opt.n_cpu,
+    )
+    dataloader.append(temp)
+
+
 # Test data loader
 val_dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True, mode="test"),
+    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_test_, unaligned=True, mode="test"),
     batch_size=5,
     shuffle=True,
     num_workers=1,
@@ -150,7 +174,7 @@ def sample_images(batches_done):
     fake_B = make_grid(fake_B, nrow=5, normalize=True)
     # Arange images along y-axis
     image_grid = torch.cat((real_A, fake_B, real_B, fake_A), 1)
-    save_image(image_grid, "images/%s/%s.jpg" % (opt.dataset_name, batches_done), normalize=False)
+    save_image(image_grid, "images/%s/%s_%s.jpg" % (opt.dataset_name, epoch, batches_done), normalize=False)
 
 
 # ----------
@@ -159,7 +183,10 @@ def sample_images(batches_done):
 
 prev_time = time.time()
 for epoch in range(opt.epoch, opt.n_epochs + 1):
-    for i, batch in enumerate(dataloader):
+
+    which_dataloader = random.randint(0,10)
+
+    for i, batch in enumerate(dataloader[which_dataloader]):
 
         # Set model input
         real_A = Variable(batch["A"].type(Tensor))
@@ -247,8 +274,8 @@ for epoch in range(opt.epoch, opt.n_epochs + 1):
         # --------------
 
         # Determine approximate time left
-        batches_done = (epoch - 1) * len(dataloader) + i
-        batches_left = opt.n_epochs * len(dataloader) - batches_done
+        batches_done = (epoch - 1) * len(dataloader[which_dataloader]) + i
+        batches_left = opt.n_epochs * len(dataloader[which_dataloader]) - batches_done
         time_left = datetime.timedelta(seconds=batches_left * (time.time() - prev_time))
         prev_time = time.time()
 
@@ -259,7 +286,7 @@ for epoch in range(opt.epoch, opt.n_epochs + 1):
                 epoch,
                 opt.n_epochs,
                 i,
-                len(dataloader),
+                len(dataloader[which_dataloader]),
                 loss_D.item(),
                 loss_G.item(),
                 loss_GAN.item(),
@@ -278,7 +305,7 @@ for epoch in range(opt.epoch, opt.n_epochs + 1):
     lr_scheduler_D_A.step()
     lr_scheduler_D_B.step()
 
-    if opt.checkpoint_interval != -1 and epoch % opt.checkpoint_interval == 0:
+    if opt.checkpoint_interval != -1 and (epoch % opt.checkpoint_interval == 0 or epoch in epochstosave):
         # Save model checkpoints
         torch.save(G_AB.state_dict(), "saved_models/%s/G_AB_%d.pth" % (opt.dataset_name, epoch))
         torch.save(G_BA.state_dict(), "saved_models/%s/G_BA_%d.pth" % (opt.dataset_name, epoch))
