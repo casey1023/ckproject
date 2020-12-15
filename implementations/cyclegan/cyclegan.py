@@ -64,8 +64,8 @@ cuda = torch.cuda.is_available()
 input_shape = (opt.channels, opt.img_height, opt.img_width)
 
 # Initialize generator and discriminator
-G_AB = Generator(input_shape, opt.num_residual_blocks)
-G_BA = Generator(input_shape, opt.num_residual_blocks)
+G_AB = Generator(input_shape, opt.n_residual_blocks)
+G_BA = Generator(input_shape, opt.n_residual_blocks)
 D_A = Discriminator(input_shape)
 D_B = Discriminator(input_shape)
 
