@@ -42,6 +42,7 @@ parser.add_argument("--lambda_cyc", type=float, default=10.0, help="cycle loss w
 parser.add_argument("--lambda_id", type=float, default=5.0, help="identity loss weight")
 parser.add_argument("--gpu_device", type=int, default=0, help="set up which gpu you gonna use")
 parser.add_argument("--epoch_save", nargs="+", default=[], help="input the epochs to save those dict")
+parser.add_argument("--n_dataloader", type=int, default=20, help="how many dataloader do you want")
 opt = parser.parse_args()
 print(opt)
 
@@ -139,7 +140,7 @@ transforms_test_ = [
 #list of dataloader
 dataloader = []
 
-for i in range(10):
+for i in range(opt.n_dataloader):
     # Training data loader
     temp = DataLoader(
         ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_train_, unaligned=True, mode="train"),
@@ -185,7 +186,7 @@ def sample_images(batches_done):
 prev_time = time.time()
 for epoch in range(opt.epoch, opt.n_epochs + 1):
 
-    which_dataloader = random.randint(0,10)
+    which_dataloader = random.randint(0,opt.n_dataloader - 1)
 
     for i, batch in enumerate(dataloader[which_dataloader]):
 
