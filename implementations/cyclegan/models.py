@@ -95,12 +95,16 @@ class Generator(nn.Module):
         self.down4 = UNetDown(256, 256, normalize=False, dropout=0.3)
 
         model = []
+        numberlist = [3, 64, 128, 256, 256, 512, 256, 128]
         # Residual blocks
-        for i in range(num_residual_blocks):
-            if i == 0 or i == num_residual_blocks - 1:
-                model += [ResidualBlock(256)]
-            else:
-                model += [ResidualBlock(256, dropout=0.3)]
+        for i in range(len(numberlist)):
+            temp = []
+            for j in range(num_residual_blocks):
+                if j == 0 or j == num_residual_blocks - 1:
+                    temp += [ResidualBlock(numberlist[i])]
+                else:
+                    temp += [ResidualBlock(numberlist[i], dropout=0.3)]
+            model.append(temp)
 
         self.up1 = UNetUp(256, 256, dropout=0.3)
         self.up2 = UNetUp(512, 128, dropout=0.3)
@@ -110,19 +114,39 @@ class Generator(nn.Module):
             nn.Upsample(scale_factor=2), nn.Conv2d(128, channels, 3, stride=1, padding=1), nn.Tanh()
         )
 
-
-        self.model = nn.Sequential(*model)
+        self.model0 = nn.Sequential(*(model[0]))
+        self.model1 = nn.Sequential(*model[1])
+        self.model2 = nn.Sequential(*model[2])
+        self.model3 = nn.Sequential(*model[3])
+        self.model4 = nn.Sequential(*model[4])
+        self.model5 = nn.Sequential(*model[5])
+        self.model6 = nn.Sequential(*model[6])
+        self.model7 = nn.Sequential(*model[7])
 
     def forward(self, x):
+        x = self.model0(x)
         d1 = self.down1(x)
+
+        d1 = self.model1(d1)
         d2 = self.down2(d1)
+
+        d2 = self.model2(d2)
         d3 = self.down3(d2)
+
+        d3 = self.model3(d3)
         d4 = self.down4(d3)
-        res = self.model(d4)
-        u1 = self.up1(res, d3)
+
+        d4 = self.model4(d4)
+        u1 = self.up1(d4, d3)
+
+        u1 = self.model5(u1)
         u2 = self.up2(u1, d2)
+
+        u2 = self.model6(u2)
         u3 = self.up3(u2, d1)
-        return u3
+
+        u3 = self.model7(u3)
+        return self.final(u3)
 
 
 ##############################

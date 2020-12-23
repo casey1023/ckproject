@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", type=int, default=1, help="epoch to start training from")
 parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
 parser.add_argument("--dataset_name", type=str, default="monet2photo", help="name of the dataset")
-parser.add_argument("--batch_size", type=int, default=1, help="size of the batches")
+parser.add_argument("--batch_size", type=int, default=10, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
 parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
@@ -37,7 +37,7 @@ parser.add_argument("--img_width", type=int, default=64, help="size of image wid
 parser.add_argument("--channels", type=int, default=3, help="number of image channels")
 parser.add_argument("--sample_interval", type=int, default=800, help="interval between saving generator outputs")
 parser.add_argument("--checkpoint_interval", type=int, default=10, help="interval between saving model checkpoints")
-parser.add_argument("--n_residual_blocks", type=int, default=9, help="number of residual blocks in generator")
+parser.add_argument("--n_residual_blocks", type=int, default=5, help="number of residual blocks in generator")
 parser.add_argument("--lambda_cyc", type=float, default=10.0, help="cycle loss weight")
 parser.add_argument("--lambda_id", type=float, default=5.0, help="identity loss weight")
 parser.add_argument("--gpu_device", type=int, default=0, help="set up which gpu you gonna use")
@@ -96,6 +96,7 @@ else:
     D_A.apply(weights_init_normal)
     D_B.apply(weights_init_normal)
 
+
 # Optimizers
 optimizer_G = torch.optim.Adam(
     itertools.chain(G_AB.parameters(), G_BA.parameters()), lr=opt.lr, betas=(opt.b1, opt.b2)
@@ -104,6 +105,7 @@ optimizer_D_A = torch.optim.Adam(D_A.parameters(), lr=opt.lr, betas=(opt.b1, opt
 optimizer_D_B = torch.optim.Adam(D_B.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
 
 # Learning rate update schedulers
+opt.lr == opt.lr * opt.batch_size
 lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(
     optimizer_G, lr_lambda=LambdaLR(opt.n_epochs, opt.epoch, opt.decay_epoch).step
 )
@@ -159,7 +161,7 @@ val_dataloader = DataLoader(
     num_workers=1,
 )
 
-
+opt.sample_interval = len(dataloader[0])
 def sample_images(batches_done):
     """Saves a generated sample from the test set"""
     imgs = next(iter(val_dataloader))

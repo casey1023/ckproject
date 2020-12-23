@@ -2,6 +2,7 @@ import random
 import time
 import datetime
 import sys
+import math
 
 from torch.autograd import Variable
 import torch
@@ -41,4 +42,5 @@ class LambdaLR:
         self.decay_start_epoch = decay_start_epoch
 
     def step(self, epoch):
-        return 1.0 - max(0, epoch + self.offset - self.decay_start_epoch) / (self.n_epochs - self.decay_start_epoch)
+
+        return math.exp(-0.03*epoch)
