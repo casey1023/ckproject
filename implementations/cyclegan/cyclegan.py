@@ -9,6 +9,7 @@ import random
 
 import torchvision.transforms as transforms
 from torchvision.utils import save_image, make_grid
+from torchvision import models
 
 from torch.utils.data import DataLoader
 from torchvision import datasets
@@ -40,6 +41,7 @@ parser.add_argument("--checkpoint_interval", type=int, default=10, help="interva
 parser.add_argument("--n_residual_blocks", type=int, default=5, help="number of residual blocks in generator")
 parser.add_argument("--lambda_cyc", type=float, default=10.0, help="cycle loss weight")
 parser.add_argument("--lambda_id", type=float, default=5.0, help="identity loss weight")
+parser.add_argument("--lambda_word", type=float, default=5.0, help="word loss weight")
 parser.add_argument("--gpu_device", type=int, default=0, help="set up which gpu you gonna use")
 parser.add_argument("--epoch_save", nargs="+", default=[], help="input the epochs to save those dict")
 parser.add_argument("--n_dataloader", type=int, default=20, help="how many dataloader do you want")
@@ -50,6 +52,9 @@ print(opt)
 os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
 os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
 
+# set up gpu device
+torch.cuda.set_device(opt.gpu_device)
+
 #epochstosave
 epochstosave = []
 for i in opt.epoch_save:
@@ -59,6 +64,7 @@ for i in opt.epoch_save:
 criterion_GAN = torch.nn.MSELoss()
 criterion_cycle = torch.nn.L1Loss()
 criterion_identity = torch.nn.L1Loss()
+criterion_word = torch.nn.L1Loss()
 
 cuda = torch.cuda.is_available()
 
@@ -70,8 +76,14 @@ G_BA = Generator(input_shape, opt.n_residual_blocks)
 D_A = Discriminator(input_shape)
 D_B = Discriminator(input_shape)
 
+# Initialize ocr
+D_word = models.resnet34(pretrained = False)
+D_word = D_word.cuda() if cuda else D_word
+num_ftrs = D_word.fc.in_features
+D_word.fc = nn.Linear(num_ftrs, 4803)
+D_word.fc = D_word.fc.cuda() if cuda else D_word.fc
+
 if cuda:
-    torch.cuda.set_device(opt.gpu_device)
     G_AB = G_AB.cuda()
     G_BA = G_BA.cuda()
     D_A = D_A.cuda()
@@ -96,6 +108,9 @@ else:
     D_A.apply(weights_init_normal)
     D_B.apply(weights_init_normal)
 
+# OCR load pretrained models
+D_word.load_state_dict(torch.load("saved_models/ocr/ocr.pth"))
+
 
 # Optimizers
 optimizer_G = torch.optim.Adam(
@@ -117,6 +132,7 @@ lr_scheduler_D_B = torch.optim.lr_scheduler.LambdaLR(
 )
 
 Tensor = torch.cuda.FloatTensor if cuda else torch.Tensor
+
 
 # Buffers of previously generated samples
 fake_A_buffer = ReplayBuffer()
@@ -206,6 +222,7 @@ for epoch in range(opt.epoch, opt.n_epochs + 1):
 
         G_AB.train()
         G_BA.train()
+        D_word.eval()
 
         optimizer_G.zero_grad()
 
@@ -231,8 +248,17 @@ for epoch in range(opt.epoch, opt.n_epochs + 1):
 
         loss_cycle = (loss_cycle_A + loss_cycle_B) / 2
 
+        # Word loss
+        loss_word_A2B = criterion_word(real_A, fake_B)
+        loss_word_B2A = criterion_word(real_B, fake_A)
+        loss_word_A2recovA = criterion_word(real_A, recov_A)
+        loss_word_B2recovB = criterion_word(real_B, recov_B)
+
+        loss_word = (loss_word_A2B + loss_word_B2A + loss_word_A2recovA + loss_word_B2recovB) / 4
+
+
         # Total loss
-        loss_G = loss_GAN + opt.lambda_cyc * loss_cycle + opt.lambda_id * loss_identity
+        loss_G = loss_GAN + opt.lambda_cyc * loss_cycle + opt.lambda_id * loss_identity + opt.lambda_word * loss_word
 
         loss_G.backward()
         optimizer_G.step()
@@ -296,6 +322,7 @@ for epoch in range(opt.epoch, opt.n_epochs + 1):
                 loss_GAN.item(),
                 loss_cycle.item(),
                 loss_identity.item(),
+                loss_word.item(),
                 time_left,
             )
         )
